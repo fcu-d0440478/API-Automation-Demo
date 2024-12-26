@@ -49,10 +49,10 @@ jobs:
       # 構建並推送 Docker 映像檔
       - name: Build and push Docker image
         run: |
-          docker build -t username/my-app:latest .
-          docker push username/my-app:latest
+          docker build -t FantasyLin20/my-app:latest .
+          docker push FantasyLin20/my-app:latest
 
       # 部署到測試環境
       - name: Deploy to testing environment
         run: |
-          docker run -d -p 8080:80 --name my-app-test username/my-app:latest
+          docker run -d -p 8080:80 --name my-app-test FantasyLin20/my-app:latest
