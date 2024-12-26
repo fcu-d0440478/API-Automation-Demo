@@ -70,4 +70,4 @@ CI/CD 流程
 請確保 requirements.txt 與應用代碼一致，避免因依賴版本引發問題。
 部署前可根據環境調整 docker-compose.yml 或環境變數。
 
-![ci-cd串接成功](Screenshot 2024-12-26 114534.png)
+![ci-cd串接成功](Screenshot_2024-12-26_114534.png)
