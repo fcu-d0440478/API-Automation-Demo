@@ -17,7 +17,7 @@ API Automation Demo 是一個基於 FastAPI 的項目，旨在展示如何開發
    Python 3.10+
    Docker 和 Docker Compose
 
-2. 本地運行
+2. 本機運行
    （1）安裝依賴
    pip install -r requirements.txt
 
@@ -39,7 +39,7 @@ docker-compose logs
 在瀏覽器訪問：http://127.0.0.1:8000
 
 4. 運行測試
-   （1）本地測試
+   （1）本機測試
    確保應用正在運行：
    pytest tests/
 
@@ -69,3 +69,5 @@ CI/CD 流程
 注意事項
 請確保 requirements.txt 與應用代碼一致，避免因依賴版本引發問題。
 部署前可根據環境調整 docker-compose.yml 或環境變數。
+
+![ci-cd串接成功](Screenshot 2024-12-26 114534.png)
