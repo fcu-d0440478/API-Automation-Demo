@@ -3,17 +3,17 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main # 當推送到 main 分支時觸發
+      - main
   pull_request:
     branches:
-      - main # 當 PR 發生在 main 分支時觸發
+      - main
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     services:
-      postgres:
+      db:
         image: postgres:latest
         env:
           POSTGRES_USER: myuser
@@ -28,48 +28,51 @@ jobs:
           --health-retries=5
 
     steps:
-      # 檢出程式碼
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 設定 Python 環境
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      # 安裝依賴並運行測試
-      - name: Install dependencies and run tests
-        env:
-          DATABASE_URL: postgresql://myuser:mypassword@postgres:5432/mydb
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pytest tests/
+
+      - name: Wait for PostgreSQL
+        run: |
+          for i in {1..10}; do
+            pg_isready -h localhost -p 5432 -U myuser && break
+            echo "Waiting for PostgreSQL..."
+            sleep 5
+          done
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://myuser:mypassword@db:5432/mydb
+        run: pytest tests/
 
   deploy:
-    needs: build-and-test # 確保測試通過後才執行
+    needs: build-and-test
     runs-on: ubuntu-latest
 
     steps:
-      # 檢出程式碼
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 登入 Docker Hub
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # 構建並推送 Docker 映像檔
       - name: Build and push Docker image
         run: |
           docker build -t fantasylin20/my-app:latest .
           docker push fantasylin20/my-app:latest
 
-      # 部署到測試環境
       - name: Deploy to testing environment
         run: |
           docker-compose -f docker-compose.yml up -d
