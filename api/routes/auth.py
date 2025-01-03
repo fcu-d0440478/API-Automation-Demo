@@ -1,9 +1,14 @@
 from fastapi import APIRouter, HTTPException, Depends
-from api.models.user import User, UserLogin
+from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
+
+from api.models.user import User, UserLogin, UserDB
+from api.database import get_db
+from api.database import SessionLocal
+from api.security import hash_password, verify_password
 
 SECRET_KEY = "your-secret-key"  # 請替換為更安全的密鑰
 ALGORITHM = "HS256"
@@ -16,17 +21,13 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-# 密碼加密與驗證
-def hash_password(password: str):
-    return pwd_context.hash(password)
+# # 密碼加密與驗證
+# def hash_password(password: str):
+#     return pwd_context.hash(password)
 
 
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-# 模擬用戶數據庫
-fake_users_db = {}
+# def verify_password(plain_password: str, hashed_password: str):
+#     return pwd_context.verify(plain_password, hashed_password)
 
 
 # 創建 JWT Token
@@ -40,35 +41,47 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 # 註冊用戶
 @router.post("/register")
-def register(user: User):
-    if user.username in fake_users_db:
+def register(user: User, db: Session = Depends(get_db)):
+    db_user = db.query(UserDB).filter(UserDB.username == user.username).first()
+    if db_user:
         raise HTTPException(status_code=400, detail="Username already exists")
-    fake_users_db[user.username] = {
-        "email": user.email,
-        "password": hash_password(user.password),
-    }
+    hashed_password = hash_password(user.password)
+    new_user = UserDB(
+        username=user.username, email=user.email, password=hashed_password
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     return {"msg": "User registered successfully"}
 
 
 # 用戶登入
 @router.post("/login")
-def login(user: UserLogin):
-    db_user = fake_users_db.get(user.username)
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(UserDB).filter(UserDB.username == user.username).first()
     if not db_user:
         raise HTTPException(status_code=401, detail="User does not exist")
-    if not verify_password(user.password, db_user["password"]):
+    if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Incorrect password")
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": db_user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-# 驗證用戶
 def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username is None or username not in fake_users_db:
-            raise HTTPException(status_code=401, detail="Invalid authentication")
-        return fake_users_db[username]
-    except JWTError:
+        if username is None:
+            raise HTTPException(
+                status_code=401, detail="Invalid authentication credentials"
+            )
+
+        # 查詢資料庫以獲取完整的用戶資料
+        db = SessionLocal()
+        user = db.query(UserDB).filter(UserDB.username == username).first()
+        db.close()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        return {"username": user.username, "email": user.email}
+    except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

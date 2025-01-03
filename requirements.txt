@@ -5,3 +5,6 @@ pytest
 httpx
 python-jose
 passlib[bcrypt]
+sqlalchemy
+psycopg2-binary
+pytest-asyncio

@@ -5,8 +5,7 @@ from api.main import app
 client = TestClient(app)
 
 
-@pytest.mark.asyncio
-async def test_register_and_login():
+def test_register_and_login():
     # 註冊用戶
     register_response = client.post(
         "/auth/register",
