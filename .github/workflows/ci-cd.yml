@@ -19,8 +19,6 @@ jobs:
           POSTGRES_USER: myuser
           POSTGRES_PASSWORD: mypassword
           POSTGRES_DB: mydb
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -42,7 +40,7 @@ jobs:
       - name: Run tests
         run: |
           docker-compose up -d
-          pytest tests/
+          docker-compose run web pytest tests/
 
       - name: Stop services
         if: always()
