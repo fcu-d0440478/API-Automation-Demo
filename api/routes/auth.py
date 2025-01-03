@@ -21,15 +21,6 @@ router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-# # 密碼加密與驗證
-# def hash_password(password: str):
-#     return pwd_context.hash(password)
-
-
-# def verify_password(plain_password: str, hashed_password: str):
-#     return pwd_context.verify(plain_password, hashed_password)
-
-
 # 創建 JWT Token
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
